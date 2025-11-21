@@ -5,7 +5,9 @@ The Third Eye Project (TEP) is an assistive technology device designed to help v
 
 ## How It Works
 The system continuously monitors the user's head orientation using the MPU-9265 accelerometer. When the user tilts their head up or down, the servo motor compensates by adjusting the ultrasonic sensor to maintain a forward-facing direction. The ultrasonic sensor measures distance to obstacles, and the buzzer provides proportional audio feedback - slower beeps for distant objects and faster, more urgent beeps as obstacles get closer.
+
 ![Nova Robot Image](images/tpe-video.gif)
+
 
 ## Circuit Diagram :
 
@@ -98,3 +100,4 @@ LOOP:
   
 
   DELAY for stable operation
+
