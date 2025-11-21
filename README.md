@@ -1,4 +1,4 @@
-### Third Eye Project (TEP) - GitHub Repository
+### Third Eye Project (TEP)
 ## Project Overview
 The Third Eye Project (TEP) is an assistive technology device designed to help visually impaired individuals detect obstacles in their path. The device uses ultrasonic sensors to detect objects and provides audio feedback through a buzzer. An IMU (Inertial Measurement Unit) ensures the sensor maintains a forward-facing direction regardless of head tilt, while an OLED display provides visual feedback.
 ![Nova Robot Image](images/tpe-img.png)
@@ -96,4 +96,5 @@ LOOP:
   UPDATE OLED display with eye image
   OPTIONALLY display distance information
   
+
   DELAY for stable operation
