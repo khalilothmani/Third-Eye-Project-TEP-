@@ -6,8 +6,9 @@
 #include <Adafruit_SSD1306.h>
 #include <Servo.h>
 
-// MPU-9265 I2C address
-#define MPU_ADDR 0x68
+// I2C Addresses - PROPERLY DEFINED
+#define MPU_ADDR 0x68    // MPU-9265 default address
+#define OLED_ADDR 0x3C   // OLED display address
 
 // OLED display settings
 #define SCREEN_WIDTH 128
@@ -39,8 +40,8 @@ int targetServoPos = 90;
 
 // Buzzer control variables
 unsigned long previousBuzzerTime = 0;
-int buzzerInterval = 1000;  // Start with 1 second between beeps
-int buzzerFrequency = 1000; // Start with 1kHz frequency
+int buzzerInterval = 1000;
+int buzzerFrequency = 1000;
 
 // Eye bitmap for OLED display
 const unsigned char eyeBitmap [] PROGMEM = {
@@ -69,13 +70,21 @@ void setup() {
   // Initialize I2C communication
   Wire.begin();
   
-  // Initialize MPU-9265
+  // Initialize MPU-9265 with proper address
   setupMPU();
   
-  // Initialize OLED display
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+  // Initialize OLED display with proper address
+  if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;); // Don't proceed, loop forever
+    Serial.println(F("Please check OLED I2C address and wiring"));
+    while(1); // Halt if OLED not found
+  }
+  
+  // Verify MPU-9265 is connected
+  if(!verifyMPUConnection()) {
+    Serial.println(F("MPU-9265 not found!"));
+    Serial.println(F("Please check MPU I2C address and wiring"));
+    while(1); // Halt if MPU not found
   }
   
   // Initialize ultrasonic sensor pins
@@ -90,10 +99,7 @@ void setup() {
   eyeServo.write(servoPos);
   
   // Display startup screen
-  display.clearDisplay();
-  display.drawBitmap(0, 0, eyeBitmap, 128, 64, WHITE);
-  display.display();
-  delay(2000);
+  displayStartup();
 }
 
 void loop() {
@@ -124,7 +130,19 @@ void setupMPU() {
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(0x6B);  // PWR_MGMT_1 register
   Wire.write(0);     // Set to zero (wakes up the MPU-9265)
-  Wire.endTransmission(true);
+  byte error = Wire.endTransmission();
+  
+  if (error == 0) {
+    Serial.println("MPU-9265 initialized successfully");
+  } else {
+    Serial.println("Error initializing MPU-9265");
+  }
+}
+
+bool verifyMPUConnection() {
+  Wire.beginTransmission(MPU_ADDR);
+  byte error = Wire.endTransmission();
+  return (error == 0);
 }
 
 void readMPU() {
@@ -155,8 +173,6 @@ void calculatePitch() {
 
 void adjustServo() {
   // Map pitch angle to servo position (compensate for head tilt)
-  // When head tilts down (positive pitch), servo should move up (decrease position)
-  // When head tilts up (negative pitch), servo should move down (increase position)
   targetServoPos = 90 - map(pitch, -90, 90, -45, 45);
   
   // Constrain servo position to safe limits
@@ -195,7 +211,6 @@ void controlBuzzer() {
   // Only activate buzzer if object is within 200 cm
   if (distance > 0 && distance < 200) {
     // Map distance to buzzer parameters
-    // Closer objects = higher frequency and shorter intervals
     buzzerFrequency = map(distance, 2, 200, 3000, 500);
     buzzerInterval = map(distance, 2, 200, 100, 1000);
     
@@ -205,13 +220,24 @@ void controlBuzzer() {
     
     // Activate buzzer in intervals
     if (currentTime - previousBuzzerTime >= buzzerInterval) {
-      tone(buzzerPin, buzzerFrequency, 100); // Beep for 100ms
+      tone(buzzerPin, buzzerFrequency, 100);
       previousBuzzerTime = currentTime;
     }
   } else {
     // No object detected or out of range, turn off buzzer
     noTone(buzzerPin);
   }
+}
+
+void displayStartup() {
+  display.clearDisplay();
+  display.drawBitmap(0, 0, eyeBitmap, 128, 64, WHITE);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(10, 50);
+  display.print("TEP Initialized");
+  display.display();
+  delay(2000);
 }
 
 void updateDisplay() {
